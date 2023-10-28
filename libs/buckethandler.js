@@ -31,6 +31,8 @@ function loadBuckets(_app) {
 // Function to load a specific bucket
 function loadBucket(_app, bucket) {
     _app.get(`/${bucket}/newsnapshot`,passport.authenticate('basic', { session: false }), function (req, res) {
+        console.log(req.url);
+
         const bucketName = req.url.split('/')[1];
         const snapshotName = `${bucketName}_${Date.now()}`;
         newSnapshot(_app, bucketName, snapshotName);
@@ -146,9 +148,29 @@ function loadSnapshot(_app, bucket, snapshot) {
 
     _app.get(`/${bucket}/${snapshot}/list`,passport.authenticate('basic', { session: false }), function (req, res) {
         const files = fs.readdirSync(`${bucket_folder}/${bucket}/${snapshot}`);
+        console.log(files);
         res.send(files);
     });
-
+    _app.get(`/${bucket}/${snapshot}/listall`, passport.authenticate('basic', { session: false }), function (req, res) {
+        const folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
+    
+        if (!fs.existsSync(folderPath)) {
+            res.status(404).send("Directory does not exist");
+            return;
+        }
+    
+        const fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true });
+    
+        const files = fileNames.filter(fileName => {
+            const filePath = path.join(folderPath, fileName);
+            return fs.statSync(filePath).isFile();
+        });
+    
+        console.log(files);
+        res.send(files);
+    });
+    
+    
 }
 
 // Function to create a new bucket
