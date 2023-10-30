@@ -125,16 +125,12 @@ function loadSnapshot(_app, bucket, snapshot) {
         }
         const fileData = req.file.buffer; // Access the file data as a Buffer
         const fileName = req.query.name; // Assuming you pass the file name as a query parameter
-
         if (!fileName) {
             return res.status(400).send('File name is missing');
         }
-
-        // Sanitize the file name to prevent any malicious paths
+        //tries to remove pathinjections
         const sanitizedFileName = path.basename(fileName);
         sanitizedPath = path.dirname(removePathTraversal(fileName));
-
-        console.log(sanitizedPath);
         var filePath = path.join(bucket_folder, bucket, snapshot, sanitizedPath)
 
 
@@ -295,9 +291,13 @@ function loadSnapshot(_app, bucket, snapshot) {
 
 // Function to create a new bucket
 function newBucket(_bucketName) {
-    if (!fs.existsSync(bucket_folder)) {
+    if (!fs.existsSync(`${bucket_folder}/${_bucketName}`)){
         fs.mkdirSync(`${bucket_folder}/${_bucketName}`);
+        const snapshotName = `${_bucketName}_${Date.now()}`;
+        fs.mkdirSync(`${bucket_folder}/${_bucketName}/${snapshotName}`);
+        return `${_bucketName} created`;
     }
+    return `${_bucketName} already exists`;
 }
 
 // Function to create a new snapshot
@@ -315,10 +315,10 @@ function initCommands(_app) {
 
     _app.get('/newbucket', passport.authenticate('basic', { session: false }), function (req, res) {
         const new_bucket_name = req.query.name;
-        newBucket(new_bucket_name);
+        nbres = newBucket(new_bucket_name);
         const buckets = fs.readdirSync(bucket_folder);
         loadBucket(_app, new_bucket_name);
-        res.send(buckets);
+        res.send(nbres);
     });
 }
 
