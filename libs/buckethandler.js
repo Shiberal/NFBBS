@@ -1,6 +1,8 @@
+var maxSize = 100 * 10.240;
+
 const multer = require('multer');
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ storage: storage, limits: { fileSize: maxSize } });
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('graceful-fs');
@@ -66,7 +68,7 @@ function loadBuckets(_app) {
 // Function to load a specific bucket
 function loadBucket(_app, bucket) {
     _app.get(`/${bucket}/newsnapshot`, passport.authenticate('basic', { session: false }), function (req, res) {
-        console.log(req.url);
+        //console.log(req.url);
 
         const bucketName = req.url.split('/')[1];
         const snapshotName = `${bucketName}_${Date.now()}`;
@@ -143,7 +145,7 @@ function loadSnapshot(_app, bucket, snapshot) {
 
         filePath = path.join(filePath, sanitizedFileName);
 
-        console.log(filePath);
+        //console.log(filePath);
         // Save the file data to the specified path
 
 
@@ -162,13 +164,13 @@ function loadSnapshot(_app, bucket, snapshot) {
 
     _app.get(`/${bucket}/${snapshot}/getFile`, passport.authenticate('basic', { session: false }), function (req, res) {
         var fileName = req.query.name; // Assuming you pass the file name as a query parameter
-        console.log("a:" + fileName)
+        //console.log("a:" + fileName)
 
         pathName = path.dirname(removePathTraversal(fileName));
         fileName = path.basename(fileName);
 
         var filePath = path.join(bucket_folder, bucket, snapshot, pathName, fileName);
-        console.log("a:" + fileName)
+        //console.log("a:" + fileName)
 
 
         // Check if the file exists
@@ -192,10 +194,10 @@ function loadSnapshot(_app, bucket, snapshot) {
         var fileName = req.query.path; // Assuming you pass the file name as a query parameter
         pathName = path.dirname(removePathTraversal(fileName));
         fileName = path.basename(fileName);
-        console.log("fn: " +fileName);
-        console.log("pn: "+pathName);
+        //console.log("fn: " +fileName);
+        //console.log("pn: "+pathName);
         var filePath = path.join("./"+bucket_folder, bucket, snapshot, pathName, fileName);
-        console.log("fp: " +filePath);
+        //console.log("fp: " +filePath);
         fs.unlink(filePath, (err) => {
             if (err) {
               console.error('Error:', err);
