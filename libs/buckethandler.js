@@ -2,7 +2,7 @@ var maxSize = 100 * 10.240;
 
 const multer = require('multer');
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage, limits: { fileSize: maxSize } });
+const upload = multer({ storage: storage, /*limits: { fileSize: maxSize }*/ }); //requires research
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('graceful-fs');
@@ -11,7 +11,7 @@ var passport;
 
 function cloneDirectoryStructure(sourceDir, targetDir) {
     const items = fs.readdirSync(sourceDir);
-  
+    
     for (const item of items) {
       const sourcePath = path.join(sourceDir, item);
       const targetPath = path.join(targetDir, item);
@@ -50,14 +50,17 @@ let bucket_folder = '';
 
 // Function to load all buckets and their snapshots
 function loadBuckets(_app) {
-    const buckets = fs.readdirSync(bucket_folder);
-
+    let buckets = fs.readdirSync(bucket_folder);
+    console.log(buckets)
+    //filter .DS_Store to avoid crash
+    buckets = buckets.filter(bucket => bucket != '.DS_Store');
+    console.log(buckets);
     for (let i = 0; i < buckets.length; i++) {
         const bucket = buckets[i];
         loadBucket(_app, bucket);
 
         const snapshotFolder = fs.readdirSync(`${bucket_folder}/${bucket}`);
-
+        
         for (let j = 0; j < snapshotFolder.length; j++) {
             const snapshot = snapshotFolder[j];
             loadSnapshot(_app, bucket, snapshot);
