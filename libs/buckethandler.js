@@ -10,14 +10,16 @@ var passport;
 
 
 function cloneDirectoryStructure(sourceDir, targetDir) {
-    const items = fs.readdirSync(sourceDir);
+    let items = fs.readdirSync(sourceDir);
+    //filter .DS_Store
+    items = items.filter(item => item != '.DS_Store');
     
     for (const item of items) {
       const sourcePath = path.join(sourceDir, item);
       const targetPath = path.join(targetDir, item);
       const isDirectory = fs.statSync(sourcePath).isDirectory();
-  
-      if (isDirectory) {
+
+      if (isDirectory ) {
         fs.mkdirSync(targetPath, { recursive: true }); // Create the directory in the target path
         cloneDirectoryStructure(sourcePath, targetPath); // Recurse into subdirectory
       }
@@ -78,9 +80,12 @@ function loadBucket(_app, bucket) {
 
         //get last snapshot
         const snapshotFolder = fs.readdirSync(`${bucket_folder}/${bucket}`);
-        const oldsnapshot = snapshotFolder[snapshotFolder.length - 1];
+        let oldsnapshot = snapshotFolder[snapshotFolder.length - 1]
+        //create the init folder
+        if (oldsnapshot == '.DS_Store'){oldsnapshot = "init";fs.mkdirSync(`${bucket_folder}/${bucket}/${oldsnapshot}`);}
         const oldsnapshotPath = `${bucket_folder}/${bucket}/${oldsnapshot}`;
         console.log(oldsnapshot);
+
 
         //create new snapshot root directory
         newSnapshot(_app,bucket,snapshotName)
@@ -226,8 +231,8 @@ function loadSnapshot(_app, bucket, snapshot) {
     });
 
     _app.get(`/${bucket}/${snapshot}/list`, passport.authenticate('basic', { session: false }), function (req, res) {
-        const files = fs.readdirSync(`${bucket_folder}/${bucket}/${snapshot}`);
-        
+        let files = fs.readdirSync(`${bucket_folder}/${bucket}/${snapshot}`);
+        files = files.filter(file => file != '.DS_Store');
         //get date of creation
         for (let i = 0; i < files.length; i++) {
             files[i] = { name: files[i], date: fs.statSync(`${bucket_folder}/${bucket}/${files[i]}`).birthtime };
@@ -236,8 +241,8 @@ function loadSnapshot(_app, bucket, snapshot) {
 
     });
     _app.get(`/${bucket}/${snapshot}/listall`, passport.authenticate('basic', { session: false }), function (req, res) {
-        const folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
-
+        let folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
+        folderPath = folderPath.filter (file => file != '.DS_Store')
         if (!fs.existsSync(folderPath)) {
             res.status(404).send("Directory does not exist");
             return;
@@ -258,14 +263,14 @@ function loadSnapshot(_app, bucket, snapshot) {
 
 
     _app.get(`/${bucket}/${snapshot}/listallwhash`, passport.authenticate('basic', { session: false }), function (req, res) {
-        const folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
-
+        let folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
         if (!fs.existsSync(folderPath)) {
             res.status(404).send("Directory does not exist");
             return;
         }
 
-        const fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true });
+        let fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true });
+        fileNames = fileNames.filter(fileName => { fileName != ".DS_Store";});
 
         const files = fileNames.map(fileName => {
             const filePath = path.join(folderPath, fileName);
