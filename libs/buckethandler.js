@@ -13,38 +13,38 @@ function cloneDirectoryStructure(sourceDir, targetDir) {
     let items = fs.readdirSync(sourceDir);
     //filter .DS_Store
     items = items.filter(item => item != '.DS_Store');
-    
+
     for (const item of items) {
-      const sourcePath = path.join(sourceDir, item);
-      const targetPath = path.join(targetDir, item);
-      const isDirectory = fs.statSync(sourcePath).isDirectory();
+        const sourcePath = path.join(sourceDir, item);
+        const targetPath = path.join(targetDir, item);
+        const isDirectory = fs.statSync(sourcePath).isDirectory();
 
-      if (isDirectory ) {
-        fs.mkdirSync(targetPath, { recursive: true }); // Create the directory in the target path
-        cloneDirectoryStructure(sourcePath, targetPath); // Recurse into subdirectory
-      }
+        if (isDirectory) {
+            fs.mkdirSync(targetPath, { recursive: true }); // Create the directory in the target path
+            cloneDirectoryStructure(sourcePath, targetPath); // Recurse into subdirectory
+        }
     }
-  }
+}
 
 
-  function createSymlinksToFiles(sourceDir, targetDir) {
+function createSymlinksToFiles(sourceDir, targetDir) {
     const items = fs.readdirSync(sourceDir);
-  
+
     for (const item of items) {
-      const sourcePath = path.join(sourceDir, item);
-      const targetPath = path.join(targetDir, item);
-      const isDirectory = fs.statSync(sourcePath).isDirectory();
-  
-      if (!isDirectory) {
-        const relativePath = path.relative(targetDir, sourcePath);
-        fs.symlinkSync(relativePath, targetPath, 'file'); // Create a symbolic link for files
-      } else {
-        const subTargetDir = path.join(targetDir, item);
-        fs.mkdirSync(subTargetDir, { recursive: true }); // Create the subdirectory
-        createSymlinksToFiles(sourcePath, subTargetDir); // Recurse into subdirectory
-      }
+        const sourcePath = path.join(sourceDir, item);
+        const targetPath = path.join(targetDir, item);
+        const isDirectory = fs.statSync(sourcePath).isDirectory();
+
+        if (!isDirectory) {
+            const relativePath = path.relative(targetDir, sourcePath);
+            fs.symlinkSync(relativePath, targetPath, 'file'); // Create a symbolic link for files
+        } else {
+            const subTargetDir = path.join(targetDir, item);
+            fs.mkdirSync(subTargetDir, { recursive: true }); // Create the subdirectory
+            createSymlinksToFiles(sourcePath, subTargetDir); // Recurse into subdirectory
+        }
     }
-  }
+}
 
 
 // Initialize the bucket folder
@@ -62,7 +62,7 @@ function loadBuckets(_app) {
         loadBucket(_app, bucket);
 
         const snapshotFolder = fs.readdirSync(`${bucket_folder}/${bucket}`);
-        
+
         for (let j = 0; j < snapshotFolder.length; j++) {
             const snapshot = snapshotFolder[j];
             loadSnapshot(_app, bucket, snapshot);
@@ -82,31 +82,31 @@ function loadBucket(_app, bucket) {
         const snapshotFolder = fs.readdirSync(`${bucket_folder}/${bucket}`);
         let oldsnapshot = snapshotFolder[snapshotFolder.length - 1]
         //create the init folder
-        if (oldsnapshot == '.DS_Store'){oldsnapshot = "init";fs.mkdirSync(`${bucket_folder}/${bucket}/${oldsnapshot}`);}
+        if (oldsnapshot == '.DS_Store') { oldsnapshot = "init"; fs.mkdirSync(`${bucket_folder}/${bucket}/${oldsnapshot}`); }
         const oldsnapshotPath = `${bucket_folder}/${bucket}/${oldsnapshot}`;
         console.log(oldsnapshot);
 
 
         //create new snapshot root directory
-        newSnapshot(_app,bucket,snapshotName)
+        newSnapshot(_app, bucket, snapshotName)
         const newsnapshotPath = `${bucket_folder}/${bucket}/${snapshotName}`;
 
-        
+
         cloneDirectoryStructure(oldsnapshotPath, newsnapshotPath);
-        createSymlinksToFiles(oldsnapshotPath,newsnapshotPath);
-
-        
+        createSymlinksToFiles(oldsnapshotPath, newsnapshotPath);
 
 
-        
 
-        loadSnapshot(_app,bucket,snapshotName)
+
+
+
+        loadSnapshot(_app, bucket, snapshotName)
         res.send(snapshotName);
 
     });
-    
+
     _app.get(`/${bucket}/list`, passport.authenticate('basic', { session: false }), function (req, res) {
-        
+
         const files = fs.readdirSync(`${bucket_folder}/${bucket}`);
         //get date of creation
         for (let i = 0; i < files.length; i++) {
@@ -204,15 +204,15 @@ function loadSnapshot(_app, bucket, snapshot) {
         fileName = path.basename(fileName);
         //console.log("fn: " +fileName);
         //console.log("pn: "+pathName);
-        var filePath = path.join("./"+bucket_folder, bucket, snapshot, pathName, fileName);
+        var filePath = path.join("./" + bucket_folder, bucket, snapshot, pathName, fileName);
         //console.log("fp: " +filePath);
         fs.unlink(filePath, (err) => {
             if (err) {
-              console.error('Error:', err);
+                console.error('Error:', err);
             } else {
-              console.log('File has been successfully removed.');
+                console.log('File has been successfully removed.');
             }
-          });
+        });
         res.send('deleted');
 
 
@@ -242,7 +242,7 @@ function loadSnapshot(_app, bucket, snapshot) {
     });
     _app.get(`/${bucket}/${snapshot}/listall`, passport.authenticate('basic', { session: false }), function (req, res) {
         let folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
-        folderPath = folderPath.filter (file => file != '.DS_Store')
+        folderPath = folderPath.filter(file => file != '.DS_Store')
         if (!fs.existsSync(folderPath)) {
             res.status(404).send("Directory does not exist");
             return;
@@ -268,15 +268,21 @@ function loadSnapshot(_app, bucket, snapshot) {
             res.status(404).send("Directory does not exist");
             return;
         }
-
-        let fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true });
-        fileNames = fileNames.filter(fileName => { fileName != ".DS_Store";});
-
+        let fileNames;
+        try {
+            fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true, });
+            fileNames = fileNames.filter(fileName => { fileName != ".DS_Store"; });
+        } catch (err) {
+            //added to avoid server hangs due to incorrect client configuration
+            
+            return;
+        }
+        
         const files = fileNames.map(fileName => {
             const filePath = path.join(folderPath, fileName);
             const fileStats = fs.statSync(filePath);
 
-            if (fileStats.isFile()) {
+            if (fileStats.isFile() && fileName != ".DS_Store") {
                 // Calculate the MD5 hash
                 const fileData = fs.readFileSync(filePath);
                 const md5hash = crypto.createHash('md5').update(fileData).digest('hex');
@@ -301,7 +307,7 @@ function loadSnapshot(_app, bucket, snapshot) {
 
 // Function to create a new bucket
 function newBucket(_bucketName) {
-    if (!fs.existsSync(`${bucket_folder}/${_bucketName}`)){
+    if (!fs.existsSync(`${bucket_folder}/${_bucketName}`)) {
         fs.mkdirSync(`${bucket_folder}/${_bucketName}`);
         const snapshotName = `${_bucketName}_${Date.now()}`;
         fs.mkdirSync(`${bucket_folder}/${_bucketName}/${snapshotName}`);
