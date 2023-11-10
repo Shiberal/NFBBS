@@ -202,6 +202,7 @@ function loadSnapshot(_app, bucket, snapshot) {
         var fileName = req.query.path; // Assuming you pass the file name as a query parameter
         pathName = path.dirname(removePathTraversal(fileName));
         fileName = path.basename(fileName);
+        console.log(fileName);
         //console.log("fn: " +fileName);
         //console.log("pn: "+pathName);
         var filePath = path.join("./" + bucket_folder, bucket, snapshot, pathName, fileName);
@@ -209,16 +210,13 @@ function loadSnapshot(_app, bucket, snapshot) {
         fs.unlink(filePath, (err) => {
             if (err) {
                 console.error('Error:', err);
+                res.send("failed to delete: " + fileName);
             } else {
                 console.log('File has been successfully removed.');
             }
         });
+
         res.send('deleted');
-
-
-
-
-
 
     });
 
@@ -264,20 +262,17 @@ function loadSnapshot(_app, bucket, snapshot) {
 
     _app.get(`/${bucket}/${snapshot}/listallwhash`, passport.authenticate('basic', { session: false }), function (req, res) {
         let folderPath = `${bucket_folder}/${bucket}/${snapshot}`;
+        console.log(folderPath)
         if (!fs.existsSync(folderPath)) {
             res.status(404).send("Directory does not exist");
             return;
         }
-        let fileNames;
-        try {
-            fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true, });
-            fileNames = fileNames.filter(fileName => { fileName != ".DS_Store"; });
-        } catch (err) {
-            //added to avoid server hangs due to incorrect client configuration
-            
-            return;
-        }
-        
+        let fileNames = fs.readdirSync(folderPath, { withFileTypes: false, recursive: true, });
+            console.log(fileNames);
+            fileNames = fileNames.filter(fileName => { return fileName != ".DS_Store"; });
+ 
+        console.log(fileNames);
+
         const files = fileNames.map(fileName => {
             const filePath = path.join(folderPath, fileName);
             const fileStats = fs.statSync(filePath);
